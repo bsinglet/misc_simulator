@@ -23,7 +23,7 @@ using namespace std;
  * So, all instructions take up 4 bytes.
 */
 const int MEMORY_BYTES = 65536;
-const unsigned int LOAD_WORD = 0;
+const unsigned int LOAD_WORD = 11;
 const unsigned int STORE_WORD = 1;
 const unsigned int NAND_REG = 2;
 const unsigned int NAND_CONST = 3;
@@ -34,7 +34,7 @@ const unsigned int BRANCH_NOT_EQUAL = 7;
 const unsigned int BRANCH_LESS = 8;
 const unsigned int BRANCH_GREATER = 9;
 const unsigned int JUMP = 10;
-const unsigned int NOP = 11;
+const unsigned int NOP = 0;
 
 class miscCore
 {
@@ -227,7 +227,7 @@ char* miscCore::getMemory()
 	return memory;
 }
 
-void setMemory(char* c)
+void setMemory(int* c)
 {
 	for (int i = 0; i < MEMORY_BYTES; i++)
 	{
@@ -237,5 +237,31 @@ void setMemory(char* c)
 
 int main(int argc, char* argv[])
 {
+	// very simple test case
+	int* m = new int[MEMORY_BYTES];
+	for (int i = 0; i < MEMORY_BYTES; i++)
+	{
+		m[i] = 0;
+	}
+	m[0] = 15 << 12;	// NAND opcode
+	m[0] &= 0;		// r0 destination
+	m[0] &= 0;		// r0 operand1
+	m[1] = 32;		// constant decimal 32
 
+	m[2] = 15 << 12;	// NAND opcode
+	m[2] &= (1 << 4) << 6;	// s0 destination
+	m[2] &= 1 << 4;		// s0 operand1
+	m[3] = 8;		// constant decimal 8
+
+	m[4] = 15 << 12;	// NAND opcode
+	m[4] &= ((1 << 4) << 6) & (1 << 4); // s1 destination
+	m[4] &= 1 << 4;		// s0 operand1
+	m[5] = 0;		// r0 operand2
+
+	// this whole thing should store the result of 32 NAND 8 in s1.
+
+	miscCore* myCore = new miscCore();
+
+	return 0;
 }
+v
