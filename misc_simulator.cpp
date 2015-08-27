@@ -139,14 +139,15 @@ void miscCore::clockPulse()
 			op1 = ~(op2 & op3);
 			break;
 		case NAND_CONST:
-			// treat operand3 as a constant, not a register.
+			// treat operand3 as a constant, not a register
 			op1 = ~(op2 & operand3);
 			break;
 		case NOT_REG:
 			op1 = ~op2;
 			break;
 		case NOT_CONST:
-			// ?????
+			// treat operand3 as a constant, not a register
+			op1 = ~operand3;
 			break;
 		case BRANCH_EQUAL:
 			break;
@@ -243,24 +244,52 @@ int main(int argc, char* argv[])
 	{
 		m[i] = 0;
 	}
-	m[0] = 15 << 12;	// NAND opcode
-	m[0] &= 0;		// r0 destination
-	m[0] &= 0;		// r0 operand1
-	m[1] = 32;		// constant decimal 32
 
-	m[2] = 15 << 12;	// NAND opcode
-	m[2] &= (1 << 4) << 6;	// s0 destination
-	m[2] &= 1 << 4;		// s0 operand1
-	m[3] = 8;		// constant decimal 8
+	// store 32 in $r0 by doing $r0 = ~(~32)
+	m[0] = NOT_CONST << 12;	// NOT opcode
+	m[0] |= 0;		// r0 destination
+	m[2] = 32;		// const 32
 
-	m[4] = 15 << 12;	// NAND opcode
-	m[4] &= ((1 << 4) << 6) & (1 << 4); // s1 destination
-	m[4] &= 1 << 4;		// s0 operand1
-	m[5] = 0;		// r0 operand2
+	m[3] = NOT_REG << 12;	// NOT opcode
+	m[3] |= 0;		// r0 destination
+	m[3] |= 0;		// r0 operand2
+	m[4] = 0;		// unused
+
+	// store 8 in $s0 by doing $s0 = ~(~32)
+	m[5] = NOT_CONST << 12;	// NOT opcode
+	m[5] |= (1 << 4) << 6;	// s0 destination
+	m[6] = 8;		// const 8
+
+	m[7] = NOT_REG << 12;	// NOT opcode
+	m[7] |= (1 << 4) << 6;	// s0 destination
+	m[7] |= (1 << 4);	// s0 operand2
+	m[8] = 0;		// unused
+
+	// now nand the two together, into s1
+	m[9] = NAND_REG << 12;	// NAND opcode
+	m[9] |= (2 << 4) << 6;	// s1 destination
+	m[9] |= 0;		// r0 operand2
+	m[10] = (1 << 4) << 10;	// s0 operand3
 
 	// this whole thing should store the result of 32 NAND 8 in s1.
 
 	miscCore* myCore = new miscCore();
+	myCore->setMemory(m);
+	for (int i = 0; i < 6; i++)
+	{
+		cout << "Clock cycle " << i << endl;
+		myCore->clockPulse();
+		int* r = myCore->getRRegisters();
+		int* s = myCore->getSRegisters();
+		for (int j = 0; j < 16; j++)
+		{
+			cout << "$r" << j << " = " << r[j] << endl;
+		}
+		for (int j = 0; j < 16; j++)
+		{
+			cout << "$s" << j << " = " << s[j] << endl;
+		}
+	}
 
 	return 0;
 }
