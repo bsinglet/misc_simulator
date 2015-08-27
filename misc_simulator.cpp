@@ -4,7 +4,7 @@
  *
  * Created by: Benjamin M. Singleton
  * Created: 08-26-2015
- * Modified:
+ * Modified: 08-27-2015
  */
 
 #include <iostream>
@@ -34,6 +34,7 @@ const unsigned int BRANCH_NOT_EQUAL = 7;
 const unsigned int BRANCH_LESS = 8;
 const unsigned int BRANCH_GREATER = 9;
 const unsigned int JUMP = 10;
+const unsigned int RET = 12;
 const unsigned int NOP = 0;
 
 class miscCore
@@ -57,6 +58,8 @@ private:
 	int* s;
 	int* t;
 	int instruction;
+	int stackFirst;
+	int stackLast;
 	int flags;
 	int* memory;
 };
@@ -68,6 +71,8 @@ miscCore::miscCore()
 	t = new int[16];
 	instruction = 0;
 	flags = 0;
+	stackFirst = 0;
+	stackLast = 0;
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -188,14 +193,47 @@ void miscCore::clockPulse()
 			setRegister(operand1, ~operand3);
 			break;
 		case BRANCH_EQUAL:
+			if (op1 == op2)
+			{
+				memory[stackLast] = instruction;
+				stackLast++;
+				instruction = operand3;
+			}
 			break;
 		case BRANCH_NOT_EQUAL:
+			if (op1 != op2)
+			{
+				memory[stackLast] = instruction;
+				stackLast++;
+				instruction = operand3;
+			}
 			break;
 		case BRANCH_LESS:
+			if (op1 < op2)
+			{
+				memory[stackLast] = instruction;
+				stackLast++;
+				instruction = operand3;
+			}
 			break;
 		case BRANCH_GREATER:
+			if (op1 > op2)
+			{
+				memory[stackLast] = instruction;
+				stackLast++;
+				instruction = operand3;
+			}
 			break;
 		case JUMP:
+			// don't store our current address, just jump blindly
+			instruction = operand3;
+			break;
+		case RET:
+			instruction = memory[stackLast];
+			if (stackLast > stackFirst)
+			{
+				stackLast--;
+			}
 			break;
 		case NOP:
 			break;
