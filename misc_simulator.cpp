@@ -40,24 +40,25 @@ class miscCore
 {
 public:
 	miscCore();
-	int* miscCore::getRegisterPointer(int operand);
+	int getRegister(int operand);
+	void setRegister(int operand, int value);
 	void clockPulse();
 	void reset();
-	int** getRRegsiters();
-	int** getSRegsiters();
-	int** getTRegsiters();
-	void setRRegsiters(int** c);
-	void setSRegsiters(int** c);
-	void setTRegsiters(int** c);
-	char* getMemory();
-	void setMemory(char* c);
+	int* getRRegisters();
+	int* getSRegisters();
+	int* getTRegisters();
+	void setRRegisters(int* i);
+	void setSRegisters(int* i);
+	void setTRegisters(int* i);
+	int* getMemory();
+	void setMemory(int* i);
 private:
-	int* r[16];
-	int* s[16];
-	int* t[16];
-	char instruction;
-	char flags;
-	char* memory;
+	int* r;
+	int* s;
+	int* t;
+	int instruction;
+	int flags;
+	int* memory;
 };
 
 miscCore::miscCore()
@@ -88,9 +89,9 @@ miscCore::miscCore()
  * First two bits: 00-R, 01-S, 10-T, 11-Unsupported
  * Last four bits: register 0-15
  */
-int* miscCore::getRegisterPointer(int operand)
+int miscCore::getRegister(int operand)
 {
-	int* ret = 0;
+	int ret = 0;
 	if ((operand & (3 << 4)) == 0)
 	{
 		// we're looking for an R register
@@ -106,6 +107,33 @@ int* miscCore::getRegisterPointer(int operand)
 	}else
 	{
 		// unsupported
+		cout << "Unsupported operand " << operand << endl;
+	}
+
+	return ret;
+}
+
+void miscCore::setRegister(int operand, int value)
+{
+	if ((operand & (3 << 4)) == 0)
+	{
+		// we're setting an R register
+		cout << "Storing " << value << " in $r" << (operand & 15) << endl;
+		r[operand & 15] = value;
+	}else if ((operand & (3 << 4)) == (1 << 4))
+	{
+		// we're setting an S register
+		cout << "Storing " << value << " in $s" << (operand & 15) << endl;
+		s[operand & 15] = value;
+	}else if ((operand & (3 << 4)) == (2 <<4 ))
+	{
+		// we're setting a T register
+		cout << "Storing " << value << " in $t" << (operand & 15) << endl;
+		t[operand & 15] = value;
+	}else
+	{
+		// unsupported
+		cout << "Cannot set unsupported operand " << operand << endl;
 	}
 }
 
@@ -115,39 +143,49 @@ int* miscCore::getRegisterPointer(int operand)
  */
 void miscCore::clockPulse()
 {
-	int* ins[] = new int[2];
+	int ins[2];
 	ins[0] = memory[instruction];
 	ins[1] = memory[instruction+1];
-	opcode = ins[0] & (15 << 12);		// ignore the top 4 bits
+	int opcode = ins[0] & (15 << 12);	// ignore the top 4 bits
+	opcode = opcode >> 12;
 	int operand1 = ins[0] & (63 << 6);	// want next 6 bits
 	int operand2 = ins[0] & 63;		// last 6 bits are operand2
 	int operand3 = ins[1];
 
-	int* op1 = getOperand(operand1);
-	int* op2 = getOperand(operand2);
-	int* op3 = getOperand(operand3);
+	int op1 = getRegister(operand1);
+	int op2 = getRegister(operand2);
+	int op3 = getRegister(operand3);
+
+	cout << "Received clock pulse." << endl;
+	cout << "At memory address " << instruction << endl;
+	cout << "Opcode operand1 operand2 operand3:" << endl;
+	cout << opcode << " " << operand1 << " " << operand2 << " " << operand3 << endl << endl;
+	//cout << "Opcode op1 op2 op3:" << endl;
+	//cout << opcode << " " << op1 << " " << op2 << " " << op3 << endl << endl;
 
 	switch(opcode)
 	{
 		case LOAD_WORD:
-			op1 = memory[op2];
+			setRegister(operand1, memory[op2]);
 			break;
 		case STORE_WORD:
 			memory[op2] = op1;
 			break;
 		case NAND_REG:
-			op1 = ~(op2 & op3);
+			setRegister(operand1,  ~(op2 & op3));
 			break;
 		case NAND_CONST:
 			// treat operand3 as a constant, not a register
-			op1 = ~(op2 & operand3);
+			setRegister(operand1, ~(op2 & operand3));
 			break;
 		case NOT_REG:
-			op1 = ~op2;
+			//cout << "NOT_REG" << endl;
+			setRegister(operand1, ~op2);
 			break;
 		case NOT_CONST:
 			// treat operand3 as a constant, not a register
-			op1 = ~operand3;
+			//cout << "NOT_CONST" << endl;
+			setRegister(operand1, ~operand3);
 			break;
 		case BRANCH_EQUAL:
 			break;
@@ -164,6 +202,8 @@ void miscCore::clockPulse()
 		default:
 			break;
 	}
+
+	instruction += 2;
 }
 
 void miscCore::reset()
@@ -184,51 +224,51 @@ void miscCore::reset()
 	}
 }
 
-char** miscCore::getRRegsiters()
+int* miscCore::getRRegisters()
 {
 	return r;
 }
 
-char** miscCore::getSRegsiters()
+int* miscCore::getSRegisters()
 {
 	return s;
 }
 
-char** miscCore::getTRegsiters()
+int* miscCore::getTRegisters()
 {
 	return t;
 }
 
-void miscCore::setRRegsiters(char** c)
+void miscCore::setRRegisters(int* c)
 {
 	for (int i = 0; i < 16; i++)
 	{
-		r = c[i];
+		r[i] = c[i];
 	}
 }
 
-void miscCore::setSRegsiters(char** c)
+void miscCore::setSRegisters(int* c)
 {
 	for (int i = 0; i < 16; i++)
 	{
-		s = c[i];
+		s[i] = c[i];
 	}
 }
 
-void miscCore::setTRegsiters(char** c)
+void miscCore::setTRegisters(int* c)
 {
 	for (int i = 0; i < 16; i++)
 	{
-		t = c[i];
+		t[i] = c[i];
 	}
 }
 
-char* miscCore::getMemory()
+int* miscCore::getMemory()
 {
 	return memory;
 }
 
-void setMemory(int* c)
+void miscCore::setMemory(int* c)
 {
 	for (int i = 0; i < MEMORY_BYTES; i++)
 	{
@@ -248,28 +288,28 @@ int main(int argc, char* argv[])
 	// store 32 in $r0 by doing $r0 = ~(~32)
 	m[0] = NOT_CONST << 12;	// NOT opcode
 	m[0] |= 0;		// r0 destination
-	m[2] = 32;		// const 32
+	m[1] = 32;		// const 32
 
-	m[3] = NOT_REG << 12;	// NOT opcode
-	m[3] |= 0;		// r0 destination
-	m[3] |= 0;		// r0 operand2
-	m[4] = 0;		// unused
+	m[2] = NOT_REG << 12;	// NOT opcode
+	m[2] |= 0;		// r0 destination
+	m[2] |= 0;		// r0 operand2
+	m[3] = 0;		// unused
 
 	// store 8 in $s0 by doing $s0 = ~(~32)
-	m[5] = NOT_CONST << 12;	// NOT opcode
-	m[5] |= (1 << 4) << 6;	// s0 destination
-	m[6] = 8;		// const 8
+	m[4] = NOT_CONST << 12;	// NOT opcode
+	m[4] |= (1 << 4) << 6;	// s0 destination
+	m[5] = 8;		// const 8
 
-	m[7] = NOT_REG << 12;	// NOT opcode
-	m[7] |= (1 << 4) << 6;	// s0 destination
-	m[7] |= (1 << 4);	// s0 operand2
-	m[8] = 0;		// unused
+	m[6] = NOT_REG << 12;	// NOT opcode
+	m[6] |= (1 << 4) << 6;	// s0 destination
+	m[6] |= (1 << 4);	// s0 operand2
+	m[7] = 0;		// unused
 
 	// now nand the two together, into s1
-	m[9] = NAND_REG << 12;	// NAND opcode
-	m[9] |= (2 << 4) << 6;	// s1 destination
-	m[9] |= 0;		// r0 operand2
-	m[10] = (1 << 4) << 10;	// s0 operand3
+	m[8] = NAND_REG << 12;	// NAND opcode
+	m[8] |= (2 << 4) << 6;	// s1 destination
+	m[8] |= 0;		// r0 operand2
+	m[9] = (1 << 4) << 10;	// s0 operand3
 
 	// this whole thing should store the result of 32 NAND 8 in s1.
 
@@ -293,4 +333,4 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-v
+
