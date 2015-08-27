@@ -41,34 +41,34 @@ class miscCore
 {
 public:
 	miscCore();
-	int getRegister(int operand);
-	void setRegister(int operand, int value);
+	unsigned int getRegister(unsigned int operand);
+	void setRegister(unsigned int operand, unsigned int value);
 	void clockPulse();
 	void reset();
-	int* getRRegisters();
-	int* getSRegisters();
-	int* getTRegisters();
-	void setRRegisters(int* i);
-	void setSRegisters(int* i);
-	void setTRegisters(int* i);
-	int* getMemory();
-	void setMemory(int* i);
+	unsigned int* getRRegisters();
+	unsigned int* getSRegisters();
+	unsigned int* getTRegisters();
+	void setRRegisters(unsigned int* i);
+	void setSRegisters(unsigned int* i);
+	void setTRegisters(unsigned int* i);
+	unsigned int* getMemory();
+	void setMemory(unsigned int* i);
 private:
-	int* r;
-	int* s;
-	int* t;
-	int instruction;
-	int stackFirst;
-	int stackLast;
-	int flags;
-	int* memory;
+	unsigned int* r;
+	unsigned int* s;
+	unsigned int* t;
+	unsigned int instruction;
+	unsigned int stackFirst;
+	unsigned int stackLast;
+	unsigned int flags;
+	unsigned int* memory;
 };
 
 miscCore::miscCore()
 {
-	r = new int[16];
-	s = new int[16];
-	t = new int[16];
+	r = new unsigned int[16];
+	s = new unsigned int[16];
+	t = new unsigned int[16];
 	instruction = 0;
 	flags = 0;
 	stackFirst = 0;
@@ -81,7 +81,7 @@ miscCore::miscCore()
 		t[i] = 0;
 	}
 
-	memory = new int[MEMORY_BYTES];
+	memory = new unsigned int[MEMORY_BYTES];
 	for (int i = 0; i < MEMORY_BYTES; i++)
 	{
 		memory[i] = 0;
@@ -94,20 +94,23 @@ miscCore::miscCore()
  * First two bits: 00-R, 01-S, 10-T, 11-Unsupported
  * Last four bits: register 0-15
  */
-int miscCore::getRegister(int operand)
+unsigned int miscCore::getRegister(unsigned int operand)
 {
-	int ret = 0;
+	unsigned int ret = 0;
 	if ((operand & (3 << 4)) == 0)
 	{
 		// we're looking for an R register
+		cout << "Retrieving $r" << (operand & 15) << endl;
 		ret = r[operand & 15];
 	}else if ((operand & (3 << 4)) == (1 << 4))
 	{
 		// we're looking for an S register
+		cout << "Retrieving $s" << (operand & 15) << endl;
 		ret = s[operand & 15];
 	}else if ((operand & (3 << 4)) == (2 <<4 ))
 	{
 		// we're looking for a T register
+		cout << "Retrieving $t" << (operand & 15) << endl;
 		ret = t[operand & 15];
 	}else
 	{
@@ -118,7 +121,7 @@ int miscCore::getRegister(int operand)
 	return ret;
 }
 
-void miscCore::setRegister(int operand, int value)
+void miscCore::setRegister(unsigned int operand, unsigned int value)
 {
 	if ((operand & (3 << 4)) == 0)
 	{
@@ -148,25 +151,26 @@ void miscCore::setRegister(int operand, int value)
  */
 void miscCore::clockPulse()
 {
-	int ins[2];
+	unsigned int ins[2];
 	ins[0] = memory[instruction];
 	ins[1] = memory[instruction+1];
-	int opcode = ins[0] & (15 << 12);	// ignore the top 4 bits
+	unsigned int opcode = ins[0] & (15 << 12);	// ignore the top 4 bits
 	opcode = opcode >> 12;
-	int operand1 = ins[0] & (63 << 6);	// want next 6 bits
-	int operand2 = ins[0] & 63;		// last 6 bits are operand2
-	int operand3 = ins[1];
+	unsigned int operand1 = ins[0] & (63 << 6);	// want next 6 bits
+	operand1 = operand1 >> 6;
+	unsigned int operand2 = ins[0] & 63;		// last 6 bits are operand2
+	unsigned int operand3 = ins[1];
 
-	int op1 = getRegister(operand1);
-	int op2 = getRegister(operand2);
-	int op3 = getRegister(operand3);
+	unsigned int op1 = getRegister(operand1);
+	unsigned int op2 = getRegister(operand2);
+	unsigned int op3 = getRegister(operand3 >> 10);
 
 	cout << "Received clock pulse." << endl;
 	cout << "At memory address " << instruction << endl;
 	cout << "Opcode operand1 operand2 operand3:" << endl;
-	cout << opcode << " " << operand1 << " " << operand2 << " " << operand3 << endl << endl;
-	//cout << "Opcode op1 op2 op3:" << endl;
-	//cout << opcode << " " << op1 << " " << op2 << " " << op3 << endl << endl;
+	cout << opcode << " " << operand1 << " " << operand2 << " " << operand3 << endl;
+	cout << "Opcode op1 op2 op3:" << endl;
+	cout << opcode << " " << op1 << " " << op2 << " " << op3 << endl << endl;
 
 	switch(opcode)
 	{
@@ -177,7 +181,7 @@ void miscCore::clockPulse()
 			memory[op2] = op1;
 			break;
 		case NAND_REG:
-			setRegister(operand1,  ~(op2 & op3));
+			setRegister(operand1, ~(op2 & op3));
 			break;
 		case NAND_CONST:
 			// treat operand3 as a constant, not a register
@@ -262,22 +266,22 @@ void miscCore::reset()
 	}
 }
 
-int* miscCore::getRRegisters()
+unsigned int* miscCore::getRRegisters()
 {
 	return r;
 }
 
-int* miscCore::getSRegisters()
+unsigned int* miscCore::getSRegisters()
 {
 	return s;
 }
 
-int* miscCore::getTRegisters()
+unsigned int* miscCore::getTRegisters()
 {
 	return t;
 }
 
-void miscCore::setRRegisters(int* c)
+void miscCore::setRRegisters(unsigned int* c)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -285,7 +289,7 @@ void miscCore::setRRegisters(int* c)
 	}
 }
 
-void miscCore::setSRegisters(int* c)
+void miscCore::setSRegisters(unsigned int* c)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -293,7 +297,7 @@ void miscCore::setSRegisters(int* c)
 	}
 }
 
-void miscCore::setTRegisters(int* c)
+void miscCore::setTRegisters(unsigned int* c)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -301,12 +305,12 @@ void miscCore::setTRegisters(int* c)
 	}
 }
 
-int* miscCore::getMemory()
+unsigned int* miscCore::getMemory()
 {
 	return memory;
 }
 
-void miscCore::setMemory(int* c)
+void miscCore::setMemory(unsigned int* c)
 {
 	for (int i = 0; i < MEMORY_BYTES; i++)
 	{
@@ -317,7 +321,7 @@ void miscCore::setMemory(int* c)
 int main(int argc, char* argv[])
 {
 	// very simple test case
-	int* m = new int[MEMORY_BYTES];
+	unsigned int* m = new unsigned int[MEMORY_BYTES];
 	for (int i = 0; i < MEMORY_BYTES; i++)
 	{
 		m[i] = 0;
@@ -326,7 +330,7 @@ int main(int argc, char* argv[])
 	// store 32 in $r0 by doing $r0 = ~(~32)
 	m[0] = NOT_CONST << 12;	// NOT opcode
 	m[0] |= 0;		// r0 destination
-	m[1] = 32;		// const 32
+	m[1] = 35;		// const 32
 
 	m[2] = NOT_REG << 12;	// NOT opcode
 	m[2] |= 0;		// r0 destination
@@ -336,7 +340,7 @@ int main(int argc, char* argv[])
 	// store 8 in $s0 by doing $s0 = ~(~32)
 	m[4] = NOT_CONST << 12;	// NOT opcode
 	m[4] |= (1 << 4) << 6;	// s0 destination
-	m[5] = 8;		// const 8
+	m[5] = 3;		// const 3
 
 	m[6] = NOT_REG << 12;	// NOT opcode
 	m[6] |= (1 << 4) << 6;	// s0 destination
@@ -345,11 +349,16 @@ int main(int argc, char* argv[])
 
 	// now nand the two together, into s1
 	m[8] = NAND_REG << 12;	// NAND opcode
-	m[8] |= (2 << 4) << 6;	// s1 destination
+	m[8] |= 17 << 6;	// s1 destination
 	m[8] |= 0;		// r0 operand2
-	m[9] = (1 << 4) << 10;	// s0 operand3
+	m[9] = 1 << 14;		// s0 operand3
 
-	// this whole thing should store the result of 32 NAND 8 in s1.
+	m[10] = NOT_REG << 12;	// NOT opcode
+	m[10] |= 17 << 6;	// s1 destination
+	m[10] |= 17;		// s1 operand2
+	m[11] = 0;		// unused
+
+	// this whole thing should store the result of 3 in $s1
 
 	miscCore* myCore = new miscCore();
 	myCore->setMemory(m);
@@ -357,8 +366,8 @@ int main(int argc, char* argv[])
 	{
 		cout << "Clock cycle " << i << endl;
 		myCore->clockPulse();
-		int* r = myCore->getRRegisters();
-		int* s = myCore->getSRegisters();
+		unsigned int* r = myCore->getRRegisters();
+		unsigned int* s = myCore->getSRegisters();
 		for (int j = 0; j < 16; j++)
 		{
 			cout << "$r" << j << " = " << r[j] << endl;
