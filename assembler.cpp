@@ -48,6 +48,48 @@ vector<string>* splitIntoWords(string s)
 }
 
 /**
+ * Given a string specifying a register, returns the code for it. There are
+ * 3 sets of 16 registers, $r0-$r15, $s0-$s15, and $t0-$t15.
+ */
+unsigned int getRegisterNumber(string s)
+{
+	unsigned int ret = 0;
+	if (s.length() < 3 || (s.length >= 3 && s[0] != "$")
+	{
+		cerr << "Error: register name has to be at least 3";
+		cerr << " characters and start with $." << endl;
+		cerr << s << endl;
+	}
+
+	s = s.substr(1, s.length()-1); // remove the initial $
+	switch(s[0])
+	{
+		case 'r':
+			ret = 0;
+			break;
+		case 's':
+			ret = 16;
+			break;
+		case 't':
+			ret = 32;
+			break;
+		default:
+			cerr << "Invalid register name " << s << endl;
+			return 0;
+	}
+
+	unsigned int regNumber = atoi(s.substr(1, s.length()-1).c_str());
+	if (regNumber < 0 || regNumber > 15)
+	{
+		cerr << "Invalid register number " << regNumber << " in " << s << endl;
+		return 0;
+	}
+	ret |= regNumber;
+
+	return ret;
+}
+
+/**
  * Takes a line of assembly, and returns the 2 bytes of machine code for it.
  */
 unsigned int* instructionToMachineCode(string s)
@@ -103,9 +145,16 @@ unsigned int* instructionToMachineCode(string s)
 		if (operation == "lw")
 		{
 			ret[0] = LOAD_WORD << 12;
+			ret[0] |= getRegisterNumber(operand1) << 6;
+			ret[0] |= getRegisterNumber(operand2);
+			ret[1] = 0;
 		}else if (operation == "sw")
 		{
 			ret[0] = STORE_WORD << 12;
+			ret[0] |= getRegisterNumber(operand1) << 6;
+			ret[0] |= getRegisterNumber(operand2);
+			ret[1] = 0;
+
 		}else if (operation == "jmp")
 		{
 			// figure out where to jump using operand1
@@ -158,15 +207,11 @@ unsigned int* instructionToMachineCode(string s)
 		return 0;
 	}
 
-	}else if (operation == "nand")
-	{
-		// have to determine if it's NAND_REG or NAND_CONST
-	}
+	return ret;
 }
 
 int main(int argc, char* argv[])
 {
-
 
 	return 0;
 }
