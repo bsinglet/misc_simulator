@@ -100,17 +100,17 @@ unsigned int miscCore::getRegister(unsigned int operand)
 	if ((operand & (3 << 4)) == 0)
 	{
 		// we're looking for an R register
-		cout << "Retrieving $r" << (operand & 15) << endl;
+		//cout << "Retrieving $r" << (operand & 15) << endl;
 		ret = r[operand & 15];
 	}else if ((operand & (3 << 4)) == (1 << 4))
 	{
 		// we're looking for an S register
-		cout << "Retrieving $s" << (operand & 15) << endl;
+		//cout << "Retrieving $s" << (operand & 15) << endl;
 		ret = s[operand & 15];
 	}else if ((operand & (3 << 4)) == (2 <<4 ))
 	{
 		// we're looking for a T register
-		cout << "Retrieving $t" << (operand & 15) << endl;
+		//cout << "Retrieving $t" << (operand & 15) << endl;
 		ret = t[operand & 15];
 	}else
 	{
@@ -126,17 +126,17 @@ void miscCore::setRegister(unsigned int operand, unsigned int value)
 	if ((operand & (3 << 4)) == 0)
 	{
 		// we're setting an R register
-		cout << "Storing " << value << " in $r" << (operand & 15) << endl;
+		//cout << "Storing " << value << " in $r" << (operand & 15) << endl;
 		r[operand & 15] = value;
 	}else if ((operand & (3 << 4)) == (1 << 4))
 	{
 		// we're setting an S register
-		cout << "Storing " << value << " in $s" << (operand & 15) << endl;
+		//cout << "Storing " << value << " in $s" << (operand & 15) << endl;
 		s[operand & 15] = value;
 	}else if ((operand & (3 << 4)) == (2 <<4 ))
 	{
 		// we're setting a T register
-		cout << "Storing " << value << " in $t" << (operand & 15) << endl;
+		//cout << "Storing " << value << " in $t" << (operand & 15) << endl;
 		t[operand & 15] = value;
 	}else
 	{
@@ -167,10 +167,10 @@ void miscCore::clockPulse()
 
 	cout << "Received clock pulse." << endl;
 	cout << "At memory address " << instruction << endl;
-	cout << "Opcode operand1 operand2 operand3:" << endl;
-	cout << opcode << " " << operand1 << " " << operand2 << " " << operand3 << endl;
-	cout << "Opcode op1 op2 op3:" << endl;
-	cout << opcode << " " << op1 << " " << op2 << " " << op3 << endl << endl;
+	//cout << "Opcode operand1 operand2 operand3:" << endl;
+	//cout << opcode << " " << operand1 << " " << operand2 << " " << operand3 << endl;
+	//cout << "Opcode op1 op2 op3:" << endl;
+	//cout << opcode << " " << op1 << " " << op2 << " " << op3 << endl << endl;
 
 	switch(opcode)
 	{
@@ -318,6 +318,27 @@ void miscCore::setMemory(unsigned int* c)
 	}
 }
 
+unsigned int* loadMachineCodeFile(char* fileName)
+{
+	ifstream infile;
+	infile.open(fileName, ios::binary);
+	if (!infile)
+	{
+		cerr << "Could not open file " << fileName << endl;
+		return 0;
+	}
+
+	unsigned int* ret;
+
+	streampos size = infile.tellg();
+	ret = new unsigned int[size];
+	infile.seekg(0, ios::beg);
+	infile.read(ret, size);
+	infile.close();
+
+	return ret;
+}
+
 int main(int argc, char* argv[])
 {
 	// very simple test case
@@ -364,6 +385,10 @@ int main(int argc, char* argv[])
 	myCore->setMemory(m);
 	for (int i = 0; i < 6; i++)
 	{
+		if (i > 0)
+		{
+			cout << endl;
+		}
 		cout << "Clock cycle " << i << endl;
 		myCore->clockPulse();
 		unsigned int* r = myCore->getRRegisters();
