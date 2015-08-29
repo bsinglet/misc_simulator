@@ -8,6 +8,7 @@
  */
 
 #include <iostream>
+#include <utility>
 #include "misc_simulator.cpp"
 
 using namespace std;
@@ -97,7 +98,8 @@ unsigned int* instructionToMachineCode(string s)
 	string operation, operand1, operand2, operand3;
 	unsigned int* ret;
 	ret = new unsigned int[2];
-	// string to lower
+	// transform the assembly code to lowercase
+	std::transform(s.begin(), s.end(), s.begin(), std::tolower());
 	vector<string>* v = splitIntoWords(s);
 	if (v->size() == 0)
 	{
